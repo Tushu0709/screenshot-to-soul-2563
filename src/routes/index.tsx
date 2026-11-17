@@ -10,7 +10,7 @@ const assets = import.meta.glob<{ url: string }>("../assets/pounce/*.asset.json"
 
 const urls: Record<string, string> = {};
 for (const [path, asset] of Object.entries(assets)) {
-  const name = (path.split("/").pop() ?? "").replace("-milo.webp.asset.json", "");
+  const name = (path.split("/").pop() ?? "").replace(/(-milo)?\.(webp|mp4)\.asset\.json$/, "");
   urls[name] = asset.url;
 }
 

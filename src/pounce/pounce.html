@@ -70,14 +70,12 @@ ul { list-style: none; }
 .room { position: absolute; z-index: 0; height: var(--fh); width: calc(var(--fh) * var(--ar)); left: calc(var(--fx) - var(--fh) * var(--ar) * var(--ox)); top: calc(100% - var(--fh)); pointer-events: none; }
 .room::before { content: ""; position: absolute; z-index: -1; inset: -100svh -100vw 0; background: linear-gradient(var(--wall-l)) 0 100% / 50% calc(100% - 100svh) no-repeat, linear-gradient(var(--wall-r)) 100% 100% / 50% calc(100% - 100svh) no-repeat, var(--wall); }
 .set { position: absolute; inset: 0; -webkit-mask: linear-gradient(transparent, #000 7%), linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); -webkit-mask-composite: source-in; mask: linear-gradient(transparent, #000 7%), linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-composite: intersect; }
-.still, .film, .stare, .film i { position: absolute; inset: 0; width: 100%; height: 100%; background: 0 0 / 100% 100% no-repeat; }
+.still, .stare { position: absolute; inset: 0; width: 100%; height: 100%; background: 0 0 / 100% 100% no-repeat; }
 .still { background-image: url(@@front@@); }
-.film { opacity: 0; transition: opacity .25s linear; }
-.film i { opacity: 0; transition: opacity .14s linear; }
-.film i.on { opacity: 1; }
-.film .p-e { background-image: url(@@look-e@@); } .film .p-se { background-image: url(@@look-se@@); } .film .p-s { background-image: url(@@look-s@@); } .film .p-sw { background-image: url(@@look-sw@@); }
-.film .p-w { background-image: url(@@look-w@@); } .film .p-nw { background-image: url(@@look-nw@@); } .film .p-n { background-image: url(@@look-n@@); } .film .p-ne { background-image: url(@@look-ne@@); }
-.ready .film { opacity: 1; }
+/* the head-turn film covers only the head window of the picture: 716 by 560 from x 430 of 1600 by 900 */
+.film { position: absolute; z-index: 0; left: 26.875%; top: 0; width: 44.75%; height: 62.2222%; object-fit: fill; opacity: 0; transition: opacity .22s linear; -webkit-mask: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent), linear-gradient(#000 78%, transparent); -webkit-mask-composite: source-in; mask: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent), linear-gradient(#000 78%, transparent); mask-composite: intersect; }
+.film::-webkit-media-controls { display: none !important; }
+.ready.turning .film { opacity: 1; }
 html:not(.motion) .film, html:not(.js) .stare { display: none; }
 .js .stare { z-index: 1; background-image: url(@@stare@@); opacity: 0; transition: opacity .16s linear; }
 .staring .stare { opacity: 1; }
@@ -259,8 +257,7 @@ html:not(.motion) .laser { display: none; }
   .set { inset: 0; top: 0; left: 0; width: 100%; height: 100%; transform: none; aspect-ratio: auto; -webkit-mask: linear-gradient(transparent, #000 8%, #000 90%, transparent), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); -webkit-mask-composite: source-in; mask: linear-gradient(transparent, #000 8%, #000 90%, transparent), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-composite: intersect; }
   .still { background-image: url(@@front-m@@); }
   .js .stare { background-image: url(@@stare-m@@); }
-  .film .p-e { background-image: url(@@look-e-m@@); } .film .p-se { background-image: url(@@look-se-m@@); } .film .p-s { background-image: url(@@look-s-m@@); } .film .p-sw { background-image: url(@@look-sw-m@@); }
-  .film .p-w { background-image: url(@@look-w-m@@); } .film .p-nw { background-image: url(@@look-nw-m@@); } .film .p-n { background-image: url(@@look-n-m@@); } .film .p-ne { background-image: url(@@look-ne-m@@); }
+  .film { left: .4167%; width: 99.4444%; }
   .feed { order: 4; grid-template-areas: "dial look" "dial mood"; gap: 10px 16px; margin: 0; }
   .cam { display: none; }
   .mood { grid-template-columns: minmax(0, 1fr); padding-top: 10px; }
@@ -343,7 +340,7 @@ html:not(.motion) .lap, html:not(.motion) .hold, html:not(.js) .burger, html:not
   <div class="room">
     <div class="set">
       <div class="still" role="img" aria-label="Milo, a cartoon boy with ginger hair, freckles and green eyes, sitting cross-legged on a teal stage"></div>
-      <div class="film" aria-hidden="true"><i class="p-e"></i><i class="p-se"></i><i class="p-s"></i><i class="p-sw"></i><i class="p-w"></i><i class="p-nw"></i><i class="p-n"></i><i class="p-ne"></i></div>
+      <video class="film" muted playsinline preload="auto" disablepictureinpicture disableremoteplayback tabindex="-1" aria-hidden="true"></video>
       <div class="stare" aria-hidden="true"></div>
     </div>
   </div>
@@ -400,7 +397,7 @@ html:not(.motion) .lap, html:not(.motion) .hold, html:not(.js) .burger, html:not
   'use strict';
   const d = document, root = d.documentElement, motion = root.classList.contains('motion');
   const $ = (s, c) => (c || d).querySelector(s), $$ = (s, c) => [...(c || d).querySelectorAll(s)];
-  const set = $('.set'), poses = $$('.film i'), stareEl = $('.stare');
+  const set = $('.set'), film = $('.film');
   const lookB = $('.look b'), moodB = $('.mood b'), bars = $$('.bars i');
   const hold = $('.hold'), burger = $('.burger'), sheet = $('#menu'), lap = $('.lap'), lapLabel = $('.lap span');
   const card = $('.card'), eps = $$('.ep'), ticks = $$('.ticks b');
@@ -469,18 +466,18 @@ html:not(.motion) .lap, html:not(.motion) .hold, html:not(.js) .burger, html:not
     return;
   }
 
-  // motion: preload the poses, then show them
-  const preload = () => {
-    root.classList.remove('ready');
-    const urls = poses.concat(stareEl).map(el => (getComputedStyle(el).backgroundImage.match(/url\(["']?([^"')]+)["']?\)/) || [])[1]).filter(Boolean);
-    let n = urls.length;
-    urls.forEach(u => {
-      const im = new Image(); im.src = u;
-      (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(() => { if (--n === 0) root.classList.add('ready'); });
-    });
+  // motion: the head-turn film, one loop of 96 frames at 24 fps, east first and clockwise
+  const FRAMES = 96, FPS = 24;
+  let shownFrame = -1, wantFrame = 0;
+  const seek = () => {
+    if (film.seeking || film.readyState < 1 || wantFrame === shownFrame) return;
+    shownFrame = wantFrame;
+    film.currentTime = (wantFrame + .5) / FPS;
   };
-  preload();
-  phoneQ.addEventListener('change', preload);
+  film.addEventListener('seeked', () => { root.classList.add('ready'); seek(); });
+  film.addEventListener('loadedmetadata', seek);
+  film.src = '@@turn@@';
+  film.load();
 
   const scope = $('.scope'), sctx = scope.getContext('2d'), streak = $('.streak'), lctx = streak.getContext('2d'), spot = $('.spot');
   let dpr = 1;
@@ -495,7 +492,7 @@ html:not(.motion) .lap, html:not(.motion) .hold, html:not(.js) .burger, html:not
 
   const dot = { x: -99, y: -99, vis: false }, target = { x: 0, y: 0 };
   let mode = 'idle', lastInput = now(), touching = false, vel = 0, vx = 0, vy = 0, wt = 0, tour = null, tourMoved = 0;
-  let pose = -1, zc = 1, last = now();
+  let last = now(), turning = false;
   const hist = [], trail = [], gaze = { a: Math.PI, d: 1e4, on: false };
 
   const bt = () => parseFloat(getComputedStyle(root).getPropertyValue('--bt')) + parseFloat(getComputedStyle(root).getPropertyValue('--bh'));
@@ -558,11 +555,6 @@ html:not(.motion) .lap, html:not(.motion) .hold, html:not(.js) .burger, html:not
     return { x: Math.max(24, Math.min(innerWidth - 24, x)), y: Math.max(bt() + 12, Math.min(innerHeight - 24, y)) };
   };
 
-  const switchPose = w => {
-    const prev = pose; pose = w;
-    if (w >= 0) { poses[w].style.zIndex = ++zc; poses[w].classList.add('on'); }
-    if (prev >= 0) { const el = poses[prev]; if (w < 0) el.classList.remove('on'); else setTimeout(() => { if (pose !== prev) el.classList.remove('on'); }, 170); }
-  };
   const angDiff = (a, b) => ((a - b + Math.PI * 3) % TAU + TAU) % TAU - Math.PI;
 
   const drawDial = () => {
@@ -636,12 +628,12 @@ html:not(.motion) .lap, html:not(.motion) .hold, html:not(.js) .burger, html:not
     } else gaze.d = 1e4;
 
     setStare(gaze.on && gaze.d < face.r);
-    let want = -1, idx = (((Math.round(gaze.a / (Math.PI / 4))) % 8) + 8) % 8;
-    if (gaze.on && !staring && gaze.d >= face.near) {
-      want = idx;
-      if (pose >= 0 && Math.abs(angDiff(gaze.a, pose * Math.PI / 4)) < Math.PI / 8 + .1) want = pose;
-    }
-    if (want !== pose) switchPose(want);
+    const turn = ((gaze.a / TAU) % 1 + 1) % 1, idx = Math.round(turn * 8) % 8;
+    const away = gaze.on && !staring && gaze.d >= (turning ? face.near * .85 : face.near);
+    if (away !== turning) { turning = away; root.classList.toggle('turning', away); }
+    wantFrame = Math.round(turn * FRAMES) % FRAMES;
+    seek();
+    const want = turning ? idx : -1;
 
     if (!gaze.on) feed('You', 'Curious', 2);
     else if (staring) feed('Nose!', 'Cross-eyed', 4);
