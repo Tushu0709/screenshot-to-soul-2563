@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+
+- The home page is one standalone HTML document (`src/pounce/pounce.html`, inline CSS and JS, no framework) served raw by the `/` route's server GET handler; why: the brief requires a single no-build HTML file, so React does not render it.
+- Pictures in that document are `@@name@@` placeholders resolved from `src/assets/pounce/*.asset.json` CDN pointers at import time; why: keeps the HTML portable so a self-contained copy can inline the same pictures.
+- The character's head-follow is 8 registered direction stills plus front and stare stills, swapped by gaze angle; why: no rotating video of the character exists, and stills keep exact registration with the stare layer.

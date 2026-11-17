@@ -1,23 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
+import template from "@/pounce/pounce.html?raw";
 
-// The home route ships no og:image, so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
-export const Route = createFileRoute("/")({
-  component: Index,
+// The home page is the standalone "pounce." hero document, served as-is.
+// Image placeholders (@@name@@) resolve to the uploaded CDN pictures.
+const assets = import.meta.glob<{ url: string }>("../assets/pounce/*.asset.json", {
+  eager: true,
+  import: "default",
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
+const urls: Record<string, string> = {};
+for (const [path, asset] of Object.entries(assets)) {
+  const name = (path.split("/").pop() ?? "").replace("-milo.webp.asset.json", "");
+  urls[name] = asset.url;
 }
+
+const html = template.replace(/@@([a-z0-9-]+)@@/g, (match, key: string) => {
+  const url = urls[key];
+  if (!url) throw new Error(`Missing picture for ${match}`);
+  return url;
+});
+
+export const Route = createFileRoute("/")({
+  server: {
+    handlers: {
+      GET: () =>
+        new Response(html, {
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+    },
+  },
+});
